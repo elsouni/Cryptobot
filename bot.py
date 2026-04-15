@@ -1,10 +1,11 @@
 import requests
 import time
 import re
+import os
 from datetime import datetime
 
-BOT_TOKEN = “8441286239:AAEiGauHKn7j8HZzvwuTcbF1vpYqGekwFJI”
-CHAT_ID = “1540373986”
+BOT_TOKEN = os.environ.get(“BOT_TOKEN”, “”)
+CHAT_ID = os.environ.get(“CHAT_ID”, “”)
 SCAN_INTERVAL_MINUTES = 15
 
 BLOCK = set([
@@ -212,17 +213,14 @@ return str(round(n, 5))
 return str(round(n, 6))
 
 def format_signal(name, sig):
-if sig[“direction”] == “LONG”:
-emoji = “GREEN LONG”
-else:
-emoji = “RED SHORT”
-stars = “*” * sig[“score”]
+d = sig[“direction”]
+stars = str(sig[“score”]) + “/5”
 lines = []
 for k, v in sig[“signals”].items():
-lines.append((“YES “ if v else “NO “) + k)
+lines.append((“YES “ if v else “NO  “) + k)
 sig_text = “\n”.join(lines)
 msg = (
-emoji + “ – “ + name + “/USDT\n”
+d + “ – “ + name + “/USDT\n”
 “—————––\n”
 “Entry:  “ + fmt(sig[“entry”]) + “\n”
 “Stop:   “ + fmt(sig[“sl”]) + “  (-” + str(sig[“pct_risk”]) + “%)\n”
@@ -231,8 +229,8 @@ emoji + “ – “ + name + “/USDT\n”
 “—————––\n”
 + sig_text + “\n”
 “—————––\n”
-“Confidence: “ + stars + “ “ + str(sig[“score”]) + “/5\n”
-“RSI: “ + str(round(sig[“rsi”], 1)) + “  |  RR: 2.0\n”
+“Confidence: “ + stars + “\n”
+“RSI: “ + str(round(sig[“rsi”], 1)) + “  RR: 2.0\n”
 “Check Bybit 15m before entering”
 )
 return msg
@@ -294,24 +292,18 @@ top = signals_found[:5]
 if not top:
 print(“No signals this scan.”)
 return
-print(“Sending “ + str(len(top)) + “ signals…”)
-send_message(
-“SCAN COMPLETE – “ + datetime.utcnow().strftime(”%H:%M UTC”) + “\n”
-“Found “ + str(len(top)) + “ signal(s) from “ + str(len(candidates)) + “ coins”
-)
+send_message(“SCAN “ + datetime.utcnow().strftime(”%H:%M UTC”) + “ – “ + str(len(top)) + “ signal(s) found”)
 time.sleep(1)
 for name, sig in top:
 send_message(format_signal(name, sig))
 time.sleep(1)
 
 if **name** == “**main**”:
-print(“BOT STARTED - scanning every “ + str(SCAN_INTERVAL_MINUTES) + “ minutes”)
-send_message(
-“Signal Bot Started\n”
-“Scanning top 80 coins every “ + str(SCAN_INTERVAL_MINUTES) + “ min\n”
-“Strategy: MACD + RSI + VWAP + 1H Trend\n”
-“Target win rate: 70%+”
-)
+print(“BOT STARTED”)
+if not BOT_TOKEN:
+print(“ERROR: BOT_TOKEN environment variable not set”)
+else:
+send_message(“Signal Bot Started - scanning every “ + str(SCAN_INTERVAL_MINUTES) + “ min”)
 while True:
 try:
 run_scan()
